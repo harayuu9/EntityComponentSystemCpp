@@ -22,6 +22,16 @@ public:
 		sortSystem();
 	}
 
+	/**
+	 * \brief 他のワールドを結合する
+	 * \details SystemListは結合しない
+	 * \param other マージするワールド
+	 */
+	void marge(World&& other);
+	
+	void writeBinaryStream(BinaryStream& output);
+	void readBinaryStream(BinaryStream& input);
+	
 private:
 	void sortSystem();
 	static void callDoCreate( SystemBase* pSystem );

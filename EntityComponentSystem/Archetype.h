@@ -66,7 +66,7 @@ struct Archetype
 		{
 			for ( auto j = i + 1; j < result.mArchetypeSize; ++j )
 			{
-				if ( result.mTypeDataList[i].getName() > result.mTypeDataList[j].getName() )
+				if ( result.mTypeDataList[i].getHash() > result.mTypeDataList[j].getHash() )
 				{
 					const auto work = result.mTypeDataList[i];
 					result.mTypeDataList[i] = result.mTypeDataList[j];
@@ -94,7 +94,7 @@ struct Archetype
 		mArchetypeMemorySize += sizeof( T );
 		for ( std::size_t i = 0; i < mArchetypeSize; ++i )
 		{
-			if ( mTypeDataList[i].getName() > newType.getName() )
+			if ( mTypeDataList[i].getHash() > newType.getHash() )
 			{
 				for ( auto j = mArchetypeSize; j > i; --j )
 				{
@@ -112,6 +112,36 @@ struct Archetype
 		return *this;
 	}
 
+	/**
+	 * \brief Archetypeを追加で登録する。ファイル読み込み用
+	 * \param typeHash TypeNameのハッシュ値
+	 * \param typeSize TypeSize
+	 * \return 自身の参照
+	 */
+	constexpr Archetype& addType( const std::size_t typeHash, const std::size_t typeSize)
+	{
+		const auto newType = TypeInfo::create(typeHash, typeSize);
+		mArchetypeMemorySize += typeSize;
+		for (std::size_t i = 0; i < mArchetypeSize; ++i)
+		{
+			if (mTypeDataList[i].getHash() > newType.getHash())
+			{
+				for (auto j = mArchetypeSize; j > i; --j)
+				{
+					mTypeDataList[j] = mTypeDataList[j - 1];
+				}
+				mTypeDataList[i] = newType;
+				++mArchetypeSize;
+				return *this;
+			}
+		}
+
+		mTypeDataList[mArchetypeSize] = newType;
+		mArchetypeSize++;
+
+		return *this;
+	}
+	
 	/**
 	 * \brief IComponentDataを継承した型が何番目に登録されているか
 	 * \tparam Type IComponentData

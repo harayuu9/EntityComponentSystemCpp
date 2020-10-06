@@ -17,7 +17,8 @@ public:
 	template<typename ...Args>
 	[[nodiscard]] Entity createEntity() const
 	{
-		return createEntity( Archetype::create<Args...>() );
+		constexpr auto archetype = Archetype::create<Args...>();
+		return createEntity( archetype );
 	}
 
 	void destroyEntity( const Entity& entity ) const;
@@ -46,7 +47,8 @@ public:
 	template<typename ...Args>
 	[[nodiscard]] std::vector<Chunk*> getChunkList() const
 	{
-		return getChunkList(Archetype::create<Args...>());
+		constexpr auto archetype = Archetype::create<Args...>();
+		return getChunkList( archetype );
 	}
 
 	[[nodiscard]] std::uint32_t getAndCreateChunkIndex( const Archetype& archetype ) const;
@@ -54,9 +56,10 @@ public:
 	template<typename ...Args>
 	[[nodiscard]] std::uint32_t getAndCreateChunkIndex() const
 	{
-		return getAndCreateChunkIndex(Archetype::create<Args...>());
+		constexpr auto archetype = Archetype::create<Args...>();
+		return getAndCreateChunkIndex( archetype );
 	}
-	
+
 private:
 	World* mpWorld = nullptr;
 };

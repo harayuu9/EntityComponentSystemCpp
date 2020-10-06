@@ -6,17 +6,29 @@ public:												   \
 	{												   \
 		return #T;									   \
 	}												   \
+	static constexpr std::size_t getTypeHash()		   \
+	{												   \
+		auto fnvOffsetBasis = 14695981039346656037ULL; \
+		constexpr auto cFnvPrime = 1099511628211ULL;   \
+													   \
+		for (auto idx : #T)							   \
+		{											   \
+			fnvOffsetBasis ^= static_cast<size_t>(idx);\
+			fnvOffsetBasis *= cFnvPrime;			   \
+		}											   \
+		return fnvOffsetBasis;						   \
+	}												   \
 	void _dumyFunction() = delete
 
 
 namespace type {
 
 template<typename T>
-struct CallGetTypeName
+struct CallGetTypeHash
 {
 private:
 	template<typename U> static auto Test( int )
-	-> decltype(U::getTypeName(), std::true_type());
+	-> decltype(U::getTypeHash(), std::true_type());
 	template<typename U> static auto Test( ... )
 	-> decltype(std::false_type());
 public:
@@ -24,24 +36,24 @@ public:
 };
 
 template<typename T>
-constexpr bool cCallGetTypeName = CallGetTypeName<T>::Type::value;
+constexpr bool cCallGetTypeName = CallGetTypeHash<T>::Type::value;
 }
 
 class TypeInfo
 {
-	constexpr explicit
-	TypeInfo( const std::string_view typeName, const std::size_t size ) : mTypeName( typeName ), mSize( size )
+	constexpr explicit TypeInfo( const std::size_t typeHash, const std::size_t size ) : mTypeHash( typeHash ),
+		mSize( size )
 	{
 	}
 
 public:
-	constexpr TypeInfo() : mTypeName( "0" ), mSize( 0 )
+	constexpr TypeInfo() : mTypeHash( -1 ), mSize( 0 )
 	{
 	}
 
 	constexpr bool operator==( const TypeInfo& other ) const
 	{
-		return mTypeName.data() == other.mTypeName.data();
+		return mTypeHash == other.mTypeHash;
 	}
 
 	constexpr bool operator!=( const TypeInfo& other ) const
@@ -49,9 +61,9 @@ public:
 		return !( *this == other );
 	}
 
-	[[nodiscard]] constexpr std::string_view getName() const
+	[[nodiscard]] constexpr std::size_t getHash() const
 	{
-		return mTypeName;
+		return mTypeHash;
 	}
 
 	[[nodiscard]] constexpr std::size_t getSize() const
@@ -62,10 +74,15 @@ public:
 	template<class T, typename = std::enable_if_t<type::cCallGetTypeName<T>>>
 	static constexpr TypeInfo create()
 	{
-		return TypeInfo( T::getTypeName(), sizeof( T ) );
+		return TypeInfo( T::getTypeHash(), sizeof( T ) );
+	}
+
+	static constexpr TypeInfo create( const std::size_t hash, const std::size_t size )
+	{
+		return TypeInfo( hash, size );
 	}
 
 private:
-	std::string_view mTypeName;
+	std::size_t mTypeHash;
 	std::size_t mSize;
 };

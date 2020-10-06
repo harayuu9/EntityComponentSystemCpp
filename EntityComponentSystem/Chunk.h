@@ -1,8 +1,7 @@
 ﻿#pragma once
-#include <cassert>
-
 #include "ComponentArray.h"
 #include "Archetype.h"
+#include "BinaryStream.h"
 
 namespace ecs {
 
@@ -12,13 +11,13 @@ public:
 	template<typename ...Args>
 	static Chunk create( const std::uint32_t capacity = 1 )
 	{
-		return create(Archetype::create<Args...>(), capacity);
+		constexpr auto archetype = Archetype::create<Args...>();
+		return create( archetype, capacity );
 	}
 
 	static Chunk create( const Archetype& archetype, std::uint32_t capacity = 1 );
 
 	bool operator==( const Chunk& other ) const;
-
 	bool operator!=( const Chunk& other ) const;
 
 	/**
@@ -81,8 +80,8 @@ public:
 
 		using TType = std::remove_const_t<std::remove_reference_t<T>>;
 		const auto offset = mArchetype.getOffset<TType>() * mCapacity;
-		const auto currentIndex = sizeof TType * entity.index;
-		std::memcpy( mpBegin.get() + offset + currentIndex, &data, sizeof TType );
+		const auto currentIndex = sizeof( TType ) * entity.index;
+		std::memcpy( mpBegin.get() + offset + currentIndex, &data, sizeof( TType ) );
 	}
 
 	/**
@@ -110,6 +109,25 @@ public:
 	 */
 	[[nodiscard]] std::uint32_t getSize() const;
 
+	/**
+	 * \brief otherを自分のチャンクにマージする
+	 * \param other マージ元
+	 */
+	void marge(Chunk&& other);
+	
+	/**
+	 * \brief Chunkの情報をBinaryStreamに出力する
+	 * \param output 出力先
+	 */
+	void writeBinaryStream( BinaryStream& output );
+
+	/**
+	 * \brief Chunkの情報をBinaryStreamから構築する
+	 * \param input 入力元
+	 * \return BinaryStreamから読み込んだ1チャンク
+	 */
+	static Chunk readBinaryStream( BinaryStream& input );
+
 private:
 	/**
 	 * \brief チャンクのメモリを再アロケートする
@@ -122,8 +140,8 @@ private:
 	{
 		using HeadType = std::remove_const_t<std::remove_reference_t<Head>>;
 		const auto offset = mArchetype.getOffset<HeadType>() * mCapacity;
-		const auto currentIndex = sizeof HeadType * mSize;
-		std::memcpy( mpBegin.get() + offset + currentIndex, &head, sizeof HeadType );
+		const auto currentIndex = sizeof( HeadType ) * mSize;
+		std::memcpy( mpBegin.get() + offset + currentIndex, &head, sizeof( HeadType ) );
 		if constexpr ( sizeof...( Types ) > 0 )
 			addComponentDataImpl( type... );
 	}
